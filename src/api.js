@@ -21,15 +21,31 @@ export class GitLabAPI {
         body: JSON.stringify({ query, variables }),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`GraphQL request failed: ${response.status} - ${errorText}`);
+      const responseText = await response.text();
+      let data;
+      
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`Invalid JSON response: ${responseText}`);
       }
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`GraphQL request failed: ${response.status} - ${responseText}`);
+      }
       
       if (data.errors) {
-        throw new Error(data.errors.map(e => e.message).join(', '));
+        const errorMessages = data.errors.map(e => {
+          let message = e.message;
+          if (e.locations) {
+            message += ` (at line ${e.locations[0]?.line}, column ${e.locations[0]?.column})`;
+          }
+          if (e.path) {
+            message += ` Path: ${e.path.join('.')}`;
+          }
+          return message;
+        }).join('\n');
+        throw new Error(`GraphQL Errors:\n${errorMessages}`);
       }
 
       return data;
@@ -37,10 +53,20 @@ export class GitLabAPI {
       if (attempt < this.retryLimit && this.shouldRetry(error)) {
         const jitter = Math.random() * 200;
         const delay = (this.retryDelay * Math.pow(2, attempt - 1)) + jitter;
+        console.log(`Attempt ${attempt} failed, retrying in ${Math.round(delay)}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         return this.fetchWithRetry(query, variables, attempt + 1);
       }
-      throw error;
+
+      // Enhance error message with request details
+      const enhancedError = new Error(
+        `GitLab API Error (Attempt ${attempt}/${this.retryLimit}):\n` +
+        `URL: ${this.baseUrl}/api/graphql\n` +
+        `Error: ${error.message}\n` +
+        `Variables: ${JSON.stringify(variables, null, 2)}`
+      );
+      enhancedError.originalError = error;
+      throw enhancedError;
     }
   }
 

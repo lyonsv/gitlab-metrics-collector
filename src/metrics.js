@@ -18,8 +18,8 @@ export class GitLabMetrics {
         authorStats[username] = {};
       }
 
-      // Process users in parallel batches - increased for modern machines
-      const batchSize = 10; // Process 10 users at a time
+      // Process users in parallel batches
+      const batchSize = 10;
       const userBatches = [];
       
       for (let i = 0; i < this.api.config.usernames.length; i += batchSize) {
@@ -33,49 +33,67 @@ export class GitLabMetrics {
         spinner.text = `Processing users... ${processedUsers}/${totalUsers}`;
         
         const batchPromises = batch.map(async username => {
-          let hasMorePages = true;
-          let cursor = null;
-          let totalMRs = 0;
+          try {
+            let hasMorePages = true;
+            let cursor = null;
+            let totalMRs = 0;
 
-          while (hasMorePages) {
-            const response = await this.api.fetchWithRetry(queries.getMergeRequests, {
-              usernames: [username],
-              startDate,
-              endDate,
-              after: cursor
-            });
-
-            const user = response.data.users.nodes[0];
-            if (!user) continue;
-
-            const mrs = user.authoredMergeRequests;
-            mrs.nodes.forEach(mr => {
-              const date = new Date(mr.mergedAt);
-              const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            while (hasMorePages) {
+              spinner.text = `Fetching data for ${username}... (${totalMRs} MRs so far)`;
               
-              if (!authorStats[username][monthKey]) {
-                authorStats[username][monthKey] = 0;
+              const response = await this.api.fetchWithRetry(queries.getMergeRequests, {
+                usernames: [username],
+                startDate,
+                endDate,
+                after: cursor
+              });
+
+              const user = response.data.users.nodes[0];
+              if (!user) {
+                spinner.info(`No data found for user: ${username} - will be recorded with 0 MRs`);
+                hasMorePages = false;
+                continue;
               }
-              authorStats[username][monthKey]++;
-              totalMRs++;
-            });
 
-            hasMorePages = mrs.pageInfo.hasNextPage;
-            cursor = mrs.pageInfo.endCursor;
+              const mrs = user.authoredMergeRequests;
+              mrs.nodes.forEach(mr => {
+                const date = new Date(mr.mergedAt);
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                
+                if (!authorStats[username][monthKey]) {
+                  authorStats[username][monthKey] = 0;
+                }
+                authorStats[username][monthKey]++;
+                totalMRs++;
+              });
+
+              hasMorePages = mrs.pageInfo.hasNextPage;
+              cursor = mrs.pageInfo.endCursor;
+            }
+
+            processedUsers++;
+            spinner.text = `Processing users... ${processedUsers}/${totalUsers} (${username}: ${totalMRs} MRs)`;
+          } catch (error) {
+            spinner.fail(`Error processing user ${username}:`);
+            console.error(error.message);
+            throw error; // Re-throw to stop processing
           }
-
-          processedUsers++;
-          spinner.text = `Processing users... ${processedUsers}/${totalUsers} (${username}: ${totalMRs} MRs)`;
         });
 
-        // Wait for current batch to complete before moving to next batch
-        await Promise.all(batchPromises);
+        try {
+          await Promise.all(batchPromises);
+        } catch (error) {
+          spinner.fail('Data collection failed');
+          throw error;
+        }
       }
 
       spinner.succeed(`Data collection completed - Processed ${processedUsers} users`);
       return authorStats;
     } catch (error) {
       spinner.fail('Data collection failed');
+      console.error('\nError details:');
+      console.error(error.message);
       throw error;
     }
   }
@@ -84,7 +102,7 @@ export class GitLabMetrics {
     const spinner = ora('Exporting to CSV...').start();
 
     try {
-      // Get all unique months and cache the date objects to avoid repeated creation
+      // Get all unique months and cache the date objects
       const monthsMap = new Map();
       const months = [...new Set(
         Object.values(authorStats).flatMap(stats => Object.keys(stats))
@@ -122,6 +140,8 @@ export class GitLabMetrics {
       spinner.succeed(`Data exported successfully to ${filename}`);
     } catch (error) {
       spinner.fail('Failed to export data');
+      console.error('\nError details:');
+      console.error(error.message);
       throw error;
     }
   }
