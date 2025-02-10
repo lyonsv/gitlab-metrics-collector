@@ -1,0 +1,10 @@
+.git/
+.gitignore
+.tool-versions
+.creds
+.eslintrc.json
+coverage/
+tests/
+*.log
+config.json
+metrics.csv 

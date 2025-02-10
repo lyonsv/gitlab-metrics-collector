@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+.env
+config.json
+metrics.csv
+coverage/
+.DS_Store
+.creds

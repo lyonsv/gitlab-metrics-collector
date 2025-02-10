@@ -1,0 +1,57 @@
+{
+  "name": "gitlab-metrics-collector",
+  "version": "1.0.0",
+  "description": "High-performance CLI tool for collecting merge request metrics from GitLab instances",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "gitlab-metrics": "./bin/gitlab-metrics.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node ./bin/gitlab-metrics.js",
+    "lint": "eslint src/**/*.js",
+    "prepublishOnly": "npm run lint"
+  },
+  "keywords": [
+    "gitlab",
+    "metrics",
+    "analytics",
+    "devops",
+    "merge-requests",
+    "cli",
+    "statistics"
+  ],
+  "author": {
+    "name": "Vincent Lyons",
+    "url": "https://github.com/lyonsv"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyonsv/gitlab-metrics-collector.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lyonsv/gitlab-metrics-collector/issues"
+  },
+  "homepage": "https://github.com/lyonsv/gitlab-metrics-collector#readme",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "csv-writer": "^1.6.0",
+    "inquirer": "^9.2.12",
+    "ora": "^7.0.1",
+    "p-limit": "^4.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
