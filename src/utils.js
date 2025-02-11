@@ -29,36 +29,6 @@ export const queries = {
   `
 };
 
-export async function promptConfig() {
-  const questions = [
-    {
-      type: 'input',
-      name: 'gitlabUrl',
-      message: 'Enter your GitLab instance URL:',
-      default: 'https://gitlab.com'
-    },
-    {
-      type: 'input',
-      name: 'accessToken',
-      message: 'Enter your GitLab access token:',
-      validate: input => input.length > 0
-    },
-    {
-      type: 'input',
-      name: 'usernames',
-      message: 'Enter GitLab usernames to analyze (comma-separated):',
-      filter: input => input.split(',').map(name => name.trim())
-    }
-  ];
-
-  return inquirer.prompt(questions);
-}
-
-export async function saveConfig(config) {
-  const configPath = path.join(__dirname, '..', 'config.json');
-  await fs.writeFile(configPath, JSON.stringify(config, null, 2));
-}
-
 export async function loadConfig() {
   const configPath = path.join(__dirname, '..', 'config.json');
   try {
@@ -67,4 +37,74 @@ export async function loadConfig() {
   } catch {
     return null;
   }
+}
+
+export async function saveConfig(config) {
+  const configPath = path.join(__dirname, '..', 'config.json');
+  await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+}
+
+export async function promptConfig() {
+  // Load existing config if available
+  const existingConfig = await loadConfig();
+  
+  const questions = [
+    {
+      type: 'input',
+      name: 'gitlabUrl',
+      message: 'Enter your GitLab instance URL:',
+      default: existingConfig?.gitlabUrl || 'https://gitlab.com',
+      transformer: (input) => input.trim().replace(/\/$/, '') // Remove trailing slash if present
+    },
+    {
+      type: 'input',
+      name: 'accessToken',
+      message: 'Enter your GitLab access token (press Enter to keep existing token):',
+      default: existingConfig?.accessToken || undefined,
+      transformer: (input, answers) => {
+        // If using existing token, show placeholder
+        if (input === existingConfig?.accessToken) {
+          return '(existing token)';
+        }
+        // Show asterisks for new token
+        return input ? '*'.repeat(input.length) : '';
+      }
+    },
+    {
+      type: 'input',
+      name: 'usernames',
+      message: 'Enter GitLab usernames to analyze (comma-separated):',
+      default: existingConfig?.usernames ? existingConfig.usernames.join(',') : undefined,
+      filter: (input) => input.split(',').map(name => name.trim()).filter(Boolean),
+      validate: (input) => {
+        if (!input || input.length === 0) {
+          return 'At least one username is required';
+        }
+        return true;
+      }
+    },
+    {
+      type: 'input',
+      name: 'concurrentRequests',
+      message: 'Enter maximum concurrent requests (press Enter for default):',
+      default: existingConfig?.concurrentRequests || 25,
+      filter: (input) => parseInt(input) || 25,
+      validate: (input) => {
+        const num = parseInt(input);
+        if (isNaN(num) || num < 1) {
+          return 'Please enter a valid number greater than 0';
+        }
+        return true;
+      }
+    }
+  ];
+
+  const answers = await inquirer.prompt(questions);
+
+  // If user just pressed enter for access token, keep the existing one
+  if (existingConfig && !answers.accessToken) {
+    answers.accessToken = existingConfig.accessToken;
+  }
+
+  return answers;
 }
