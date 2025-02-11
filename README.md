@@ -11,49 +11,57 @@
 - 🔄 Smart request batching with automatic retries
 - 📊 Monthly merge request statistics in CSV format
 - ⚙️ Configurable performance settings
-- 🛠 Easy setup and configuration
+
+## Prerequisites
+
+1. Install Node.js (16.0.0 or higher):
+   ```bash
+   # Using homebrew on macOS
+   brew install node
+
+   # Or download from nodejs.org
+   # https://nodejs.org/
+   ```
+
+2. Install a package manager:
+   ```bash
+   # Either npm (comes with Node.js)
+   npm install -g npm@latest
+
+   # Or yarn
+   npm install -g yarn
+   ```
 
 ## Installation
 
-### Prerequisites
-
-1. Install Homebrew (package manager for macOS):
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
+# Install globally using npm
+npm install -g gitlab-metrics-collector
 
-2. Install Node Version Manager (nvm):
-```bash
-# Install nvm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-
-# Configure shell
-cat << 'EOF' >> ~/.zshrc
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-EOF
-
-# Reload configuration
-source ~/.zshrc
-
-# Install Node.js LTS
-nvm install --lts && nvm use --lts
-```
-
-3. Install Yarn package manager:
-```bash
-npm install -g yarn
-```
-
-### Package Installation
-
-```bash
-# Install globally
+# OR using yarn
 yarn global add gitlab-metrics-collector
 
-# Or install locally in your project
-yarn add gitlab-metrics-collector
+# Verify installation
+gitlab-metrics --version
+```
+
+If you get a "command not found" error after installation:
+
+1. For npm users, make sure global npm binaries are in your PATH:
+```bash
+# Add this to your ~/.zshrc or ~/.bashrc
+export PATH="$PATH:$(npm config get prefix)/bin"
+```
+
+2. For yarn users, make sure global yarn binaries are in your PATH:
+```bash
+# Add this to your ~/.zshrc or ~/.bashrc
+export PATH="$PATH:$(yarn global bin)"
+```
+
+After adding the PATH, reload your shell:
+```bash
+source ~/.zshrc  # or source ~/.bashrc
 ```
 
 ## Configuration
@@ -63,7 +71,7 @@ Run the configuration wizard:
 gitlab-metrics configure
 ```
 
-Required information:
+You'll need:
 - GitLab instance URL (defaults to gitlab.com)
 - Personal Access Token (requires `read_api` scope)
 - Target usernames (comma-separated list)
@@ -72,7 +80,7 @@ Required information:
 
 Collect merge request statistics:
 ```bash
-gitlab-metrics collect -s 2024-01-01 -e 2024-01-31 -o metrics.csv -c 25
+gitlab-metrics collect -s 2024-01-01 -e 2024-01-31 -o metrics.csv
 ```
 
 ### Command Options
@@ -84,26 +92,11 @@ gitlab-metrics collect -s 2024-01-01 -e 2024-01-31 -o metrics.csv -c 25
 | `-o, --output` | Output file path | metrics.csv | No |
 | `-c, --concurrent` | Concurrent request limit | 25 | No |
 
-## Performance Configuration
+## Performance Tips
 
-### Default Settings
-The tool is optimized with these default parameters:
-- Concurrent requests: 25
-- Users processed in parallel: 10
-- Merge requests per API call: 500
-
-### Hardware-Specific Recommendations
-
-| Hardware | Recommended Concurrent Requests | Configuration |
-|----------|-------------------------------|---------------|
-| M1/M2 MacBook Pro | 50 | `-c 50` |
-| MacBook Air | 25 | `-c 25` (default) |
-| Older Machines | 15 | `-c 15` |
-
-> **Note**: Performance may be limited by:
-> - GitLab instance rate limits
-> - Network bandwidth and latency
-> - Total number of merge requests
+- If you encounter rate limiting, reduce concurrent requests using `-c` (e.g., `-c 15`)
+- For large date ranges, consider processing in smaller chunks
+- The tool implements automatic retries with exponential backoff
 
 ## Output Format
 
@@ -112,32 +105,21 @@ The tool generates a CSV file containing:
 - Monthly columns (e.g., "January 2024")
 - Merge request count per user per month
 
-## Development
-
-```bash
-# Clone repository
-git clone https://github.com/yourusername/gitlab-metrics-collector.git
-cd gitlab-metrics-collector
-
-# Install dependencies
-yarn install
-
-# Start development
-yarn start
-```
-
 ## Troubleshooting
 
-### Rate Limiting
-If you encounter rate limiting:
-- Reduce concurrent requests using the `-c` flag
-- The tool implements automatic retries with exponential backoff
+1. **Command Not Found**
+   - Verify PATH settings as described in Installation section
+   - Try reinstalling the package
+   - Make sure Node.js is properly installed: `node --version`
 
-### Resource Usage
-For memory or CPU constraints:
-- Reduce parallel user processing
-- Process smaller date ranges
-- Lower concurrent request limit
+2. **Rate Limiting**
+   - Reduce concurrent requests using `-c 15` or lower
+   - Check your GitLab token permissions
+
+3. **Connection Issues**
+   - Verify your GitLab URL is correct
+   - Ensure your access token is valid
+   - Check your network connection
 
 ## License
 
