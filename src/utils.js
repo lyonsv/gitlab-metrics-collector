@@ -61,7 +61,7 @@ export async function promptConfig() {
       name: 'accessToken',
       message: 'Enter your GitLab access token (press Enter to keep existing token):',
       default: existingConfig?.accessToken || undefined,
-      transformer: (input, answers) => {
+      transformer: (input) => {
         // If using existing token, show placeholder
         if (input === existingConfig?.accessToken) {
           return '(existing token)';
