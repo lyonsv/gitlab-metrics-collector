@@ -1,6 +1,6 @@
 // src/index.js
 import { Command } from 'commander';
-import { promptConfig, saveConfig, loadConfig } from './utils.js';
+import { promptConfig, saveConfig, loadConfig, promptCollectOptions } from './utils.js';
 import { GitLabMetrics } from './metrics.js';
 
 const program = new Command();
@@ -27,8 +27,8 @@ program
 program
   .command('collect')
   .description('Collect merge request metrics')
-  .requiredOption('-s, --start-date <date>', 'Start date (YYYY-MM-DD)')
-  .requiredOption('-e, --end-date <date>', 'End date (YYYY-MM-DD)')
+  .option('-s, --start-date <date>', 'Start date (YYYY-MM-DD)')
+  .option('-e, --end-date <date>', 'End date (YYYY-MM-DD)')
   .option('-o, --output <file>', 'Output file path', 'metrics.csv')
   .option('-c, --concurrent <number>', 'Maximum concurrent requests', '25')
   .option('-f, --format <type>', 'Export format (csv or html)', 'csv')
@@ -40,16 +40,19 @@ program
         process.exit(1);
       }
 
-      config.concurrentRequests = parseInt(options.concurrent);
-      const metrics = new GitLabMetrics(config);
-      const data = await metrics.getMergeRequestData(options.startDate, options.endDate);
+      // Prompt for any missing required options
+      const collectionOptions = await promptCollectOptions(options);
 
-      if (options.format === 'html') {
-        const outputPath = options.output.replace(/\.(csv|html)?$/, '.html');
+      config.concurrentRequests = parseInt(collectionOptions.concurrent);
+      const metrics = new GitLabMetrics(config);
+      const data = await metrics.getMergeRequestData(collectionOptions.startDate, collectionOptions.endDate);
+
+      if (collectionOptions.format === 'html') {
+        const outputPath = collectionOptions.output.replace(/\.(csv|html)?$/, '.html');
         await metrics.exportToHtml(data, outputPath);
         console.log(`Data exported successfully to ${outputPath}`);
       } else {
-        await metrics.exportToCsv(data, options.output);
+        await metrics.exportToCsv(data, collectionOptions.output);
       }
     } catch (error) {
       console.error('Data collection failed:', error.message);

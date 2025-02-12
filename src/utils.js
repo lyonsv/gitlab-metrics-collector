@@ -108,3 +108,54 @@ export async function promptConfig() {
 
   return answers;
 }
+
+export async function promptCollectOptions(options) {
+  const questions = [];
+
+  if (!options.startDate) {
+    questions.push({
+      type: 'input',
+      name: 'startDate',
+      message: 'Enter start date (YYYY-MM-DD):',
+      validate: (input) => {
+        const date = new Date(input);
+        if (isNaN(date.getTime())) {
+          return 'Please enter a valid date in YYYY-MM-DD format';
+        }
+        return true;
+      }
+    });
+  }
+
+  if (!options.endDate) {
+    questions.push({
+      type: 'input',
+      name: 'endDate',
+      message: 'Enter end date (YYYY-MM-DD):',
+      validate: (input) => {
+        const date = new Date(input);
+        if (isNaN(date.getTime())) {
+          return 'Please enter a valid date in YYYY-MM-DD format';
+        }
+        return true;
+      }
+    });
+  }
+
+  if (!options.format) {
+    questions.push({
+      type: 'list',
+      name: 'format',
+      message: 'Select export format:',
+      choices: ['csv', 'html'],
+      default: 'csv'
+    });
+  }
+
+  if (questions.length === 0) {
+    return options;
+  }
+
+  const answers = await inquirer.prompt(questions);
+  return { ...options, ...answers };
+}
