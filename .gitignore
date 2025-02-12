@@ -1,9 +1,44 @@
+# Dependencies
 node_modules/
-dist/
-*.log
-.env
+yarn.lock
+package-lock.json
+
+# Generated files
+*.csv
+*.html
+!index.html
+metrics-*.csv
+metrics-*.html
+demo.html
+
+# Private data
 config.json
-metrics.csv
-coverage/
-.DS_Store
+.env
+.env.*
 .creds
+.credentials
+.token
+.tokens
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp

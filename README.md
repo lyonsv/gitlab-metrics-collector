@@ -10,6 +10,7 @@
 - ⚡️ Parallel processing for high-speed data collection
 - 🔄 Smart request batching with automatic retries
 - 📊 Monthly merge request statistics in CSV format
+- 📈 Interactive HTML visualization with charts
 - ⚙️ Configurable performance settings
 
 ## Prerequisites
@@ -80,7 +81,16 @@ You'll need:
 
 Collect merge request statistics:
 ```bash
+# Export to CSV (default)
 gitlab-metrics collect -s 2024-01-01 -e 2024-01-31 -o metrics.csv
+
+# Export to interactive HTML visualization
+gitlab-metrics collect -s 2024-01-01 -e 2024-01-31 -o metrics.html -f html
+
+After running the above command, open the generated HTML file (e.g., metrics.html) in a modern web browser to view your interactive report. This interactive visualization utilizes Plotly.js to display responsive line charts with dynamic tooltips and toggle options for individual users' metrics.
+
+Demo:
+If you'd like to quickly preview the HTML visualization without processing your own data, you can generate a sample report using the above command and immediately open it in your browser, or refer to the sample demo (if provided) in the repository.
 ```
 
 ### Command Options
@@ -91,19 +101,27 @@ gitlab-metrics collect -s 2024-01-01 -e 2024-01-31 -o metrics.csv
 | `-e, --end-date` | End date (YYYY-MM-DD) | - | Yes |
 | `-o, --output` | Output file path | metrics.csv | No |
 | `-c, --concurrent` | Concurrent request limit | 25 | No |
+| `-f, --format` | Export format (csv or html) | csv | No |
+
+## Export Formats
+
+### CSV Format
+- User-based rows
+- Monthly columns (e.g., "January 2024")
+- Merge request count per user per month
+
+### HTML Format
+- Interactive visualization using Plotly.js
+- Line charts showing merge request trends
+- Ability to toggle individual users
+- Hover tooltips with detailed information
+- Responsive design for all screen sizes
 
 ## Performance Tips
 
 - If you encounter rate limiting, reduce concurrent requests using `-c` (e.g., `-c 15`)
 - For large date ranges, consider processing in smaller chunks
 - The tool implements automatic retries with exponential backoff
-
-## Output Format
-
-The tool generates a CSV file containing:
-- User-based rows
-- Monthly columns (e.g., "January 2024")
-- Merge request count per user per month
 
 ## Troubleshooting
 

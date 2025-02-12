@@ -2,6 +2,7 @@ import ora from 'ora';
 import { createObjectCsvWriter } from 'csv-writer';
 import { GitLabAPI } from './api.js';
 import { queries } from './utils.js';
+import { exportToHtml } from './exporters/html.js';
 
 export class GitLabMetrics {
   constructor(config) {
@@ -76,16 +77,11 @@ export class GitLabMetrics {
           } catch (error) {
             spinner.fail(`Error processing user ${username}:`);
             console.error(error.message);
-            throw error; // Re-throw to stop processing
+            throw error;
           }
         });
 
-        try {
-          await Promise.all(batchPromises);
-        } catch (error) {
-          spinner.fail('Data collection failed');
-          throw error;
-        }
+        await Promise.all(batchPromises);
       }
 
       spinner.succeed(`Data collection completed - Processed ${processedUsers} users`);
@@ -140,6 +136,19 @@ export class GitLabMetrics {
       spinner.succeed(`Data exported successfully to ${filename}`);
     } catch (error) {
       spinner.fail('Failed to export data');
+      console.error('\nError details:');
+      console.error(error.message);
+      throw error;
+    }
+  }
+
+  async exportToHtml(data, outputPath) {
+    const spinner = ora('Generating HTML visualization...').start();
+    try {
+      await exportToHtml(data, outputPath);
+      spinner.succeed(`Data exported successfully to ${outputPath}`);
+    } catch (error) {
+      spinner.fail('Failed to export HTML');
       console.error('\nError details:');
       console.error(error.message);
       throw error;

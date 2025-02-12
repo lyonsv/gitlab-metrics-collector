@@ -16,7 +16,8 @@
   "scripts": {
     "start": "node ./bin/gitlab-metrics.js",
     "lint": "eslint src/**/*.js",
-    "prepublishOnly": "npm run lint"
+    "prepublishOnly": "npm run lint",
+    "demo": "node src/demo/generate.js"
   },
   "keywords": [
     "gitlab",
@@ -41,7 +42,6 @@
   "homepage": "https://github.com/lyonsv/gitlab-metrics-collector#readme",
   "license": "MIT",
   "dependencies": {
-    "chalk": "^5.3.0",
     "commander": "^11.1.0",
     "csv-writer": "^1.6.0",
     "inquirer": "^9.2.12",
