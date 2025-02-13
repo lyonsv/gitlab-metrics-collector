@@ -20,6 +20,21 @@ You can view a demo of the output by opening the [demo.html](https://github.com/
 
 ![image](https://github.com/user-attachments/assets/d97fd958-d314-4c89-bd6a-61e2bf7d58fc)
 
+> **❗ Important Note on Interpreting Metrics**
+>
+> While this tool provides valuable insights into merge request patterns, it's crucial to interpret these metrics within your team's broader context:
+>
+> - Some work naturally requires longer development cycles with fewer MRs
+> - System issues or technical constraints can temporarily affect MR frequency
+> - Personal circumstances and work-life events may impact individual metrics
+> - Changes in metrics often signal something worth exploring, but numbers alone don't tell the whole story
+>
+> For a comprehensive assessment, use this tool in conjunction with other analysis tools such as:
+> - [Radarz](https://radarz.built.ie) for additional team performance insights
+> - Team retrospectives and feedback sessions
+> - Project-specific context and complexity measures
+>
+> Use these metrics as one of many inputs for understanding team dynamics and identifying potential areas for support or improvement, not as absolute performance indicators.
 
 ## Prerequisites
 
