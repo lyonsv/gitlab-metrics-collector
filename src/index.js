@@ -29,9 +29,9 @@ program
   .description('Collect merge request metrics')
   .option('-s, --start-date <date>', 'Start date (YYYY-MM-DD)')
   .option('-e, --end-date <date>', 'End date (YYYY-MM-DD)')
-  .option('-o, --output <file>', 'Output file path', 'metrics.csv')
+  .option('-o, --output <file>', 'Output file path')
   .option('-c, --concurrent <number>', 'Maximum concurrent requests', '25')
-  .option('-f, --format <type>', 'Export format (csv or html)', 'csv')
+  .option('-f, --format <type>', 'Export format (csv or html)')
   .action(async (options) => {
     try {
       const config = await loadConfig();
@@ -43,14 +43,18 @@ program
       // Prompt for any missing required options
       const collectionOptions = await promptCollectOptions(options);
 
+      // Set default output file based on format if not specified
+      if (!collectionOptions.output) {
+        collectionOptions.output = `metrics.${collectionOptions.format}`;
+      }
+
       config.concurrentRequests = parseInt(collectionOptions.concurrent);
       const metrics = new GitLabMetrics(config);
       const data = await metrics.getMergeRequestData(collectionOptions.startDate, collectionOptions.endDate);
 
       if (collectionOptions.format === 'html') {
-        const outputPath = collectionOptions.output.replace(/\.(csv|html)?$/, '.html');
-        await metrics.exportToHtml(data, outputPath);
-        console.log(`Data exported successfully to ${outputPath}`);
+        await metrics.exportToHtml(data, collectionOptions.output);
+        console.log(`Data exported successfully to ${collectionOptions.output}`);
       } else {
         await metrics.exportToCsv(data, collectionOptions.output);
       }
