@@ -14,6 +14,13 @@
 - 💬 Interactive prompts for easy configuration
 - ⚙️ Configurable performance settings
 
+## HTML Demo 
+
+You can view a demo of the output by opening the [demo.html](https://github.com/lyonsv/gitlab-metrics-collector/blob/main/demo.html) file.
+
+![image](https://github.com/user-attachments/assets/d97fd958-d314-4c89-bd6a-61e2bf7d58fc)
+
+
 ## Prerequisites
 
 1. Install Node.js (16.0.0 or higher):
