@@ -52,14 +52,14 @@ export async function promptConfig() {
     {
       type: 'input',
       name: 'gitlabUrl',
-      message: 'Enter your GitLab instance URL:',
+      message: '🌐 Enter your GitLab instance URL:',
       default: existingConfig?.gitlabUrl || 'https://gitlab.com',
       transformer: (input) => input.trim().replace(/\/$/, '') // Remove trailing slash if present
     },
     {
       type: 'input',
       name: 'accessToken',
-      message: 'Enter your GitLab access token (press Enter to keep existing token):',
+      message: '🔑 Enter your GitLab access token (press Enter to keep existing token):',
       default: existingConfig?.accessToken || undefined,
       transformer: (input) => {
         // If using existing token, show placeholder
@@ -73,7 +73,7 @@ export async function promptConfig() {
     {
       type: 'input',
       name: 'usernames',
-      message: 'Enter GitLab usernames to analyze (comma-separated):',
+      message: '👥 Enter GitLab usernames to analyze (comma-separated):',
       default: existingConfig?.usernames ? existingConfig.usernames.join(',') : undefined,
       filter: (input) => input.split(',').map(name => name.trim()).filter(Boolean),
       validate: (input) => {
@@ -86,7 +86,7 @@ export async function promptConfig() {
     {
       type: 'input',
       name: 'concurrentRequests',
-      message: 'Enter maximum concurrent requests (press Enter for default):',
+      message: '⚡️ Enter maximum concurrent requests (press Enter for default):',
       default: existingConfig?.concurrentRequests || 25,
       filter: (input) => parseInt(input) || 25,
       validate: (input) => {
@@ -116,7 +116,7 @@ export async function promptCollectOptions(options) {
     questions.push({
       type: 'input',
       name: 'startDate',
-      message: 'Enter start date (YYYY-MM-DD):',
+      message: '📅 Enter start date (YYYY-MM-DD):',
       validate: (input) => {
         const date = new Date(input);
         if (isNaN(date.getTime())) {
@@ -131,7 +131,7 @@ export async function promptCollectOptions(options) {
     questions.push({
       type: 'input',
       name: 'endDate',
-      message: 'Enter end date (YYYY-MM-DD):',
+      message: '📅 Enter end date (YYYY-MM-DD):',
       validate: (input) => {
         const date = new Date(input);
         if (isNaN(date.getTime())) {
@@ -146,7 +146,7 @@ export async function promptCollectOptions(options) {
     questions.push({
       type: 'list',
       name: 'format',
-      message: 'Select export format:',
+      message: '📊 Select export format:',
       choices: ['csv', 'html'],
       default: 'csv'
     });
