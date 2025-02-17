@@ -1,6 +1,6 @@
 // src/index.js
 import { Command } from 'commander';
-import { promptConfig, saveConfig, loadConfig, promptCollectOptions } from './utils.js';
+import { promptConfig, saveConfig, loadConfig, promptCollectOptions, promptTeamSelection } from './utils.js';
 import { GitLabMetrics } from './metrics.js';
 
 const program = new Command();
@@ -32,6 +32,7 @@ program
   .option('-o, --output <file>', 'Output file path')
   .option('-c, --concurrent <number>', 'Maximum concurrent requests', '25')
   .option('-f, --format <type>', 'Export format (csv or html)')
+  .option('-t, --team <name>', 'Team name to collect metrics for')
   .action(async (options) => {
     try {
       const config = await loadConfig();
@@ -40,15 +41,30 @@ program
         process.exit(1);
       }
 
+      // Get the team to use
+      let team;
+      if (options.team) {
+        team = config.teams.find(t => t.name === options.team);
+        if (!team) {
+          console.error(`Team "${options.team}" not found.`);
+          process.exit(1);
+        }
+      } else {
+        team = await promptTeamSelection(config);
+      }
+
       // Prompt for any missing required options
       const collectionOptions = await promptCollectOptions(options);
 
       // Set default output file based on format if not specified
       if (!collectionOptions.output) {
-        collectionOptions.output = `metrics.${collectionOptions.format}`;
+        collectionOptions.output = `metrics-${team.name}.${collectionOptions.format}`;
       }
 
+      // Use the team's usernames
+      config.usernames = team.usernames;
       config.concurrentRequests = parseInt(collectionOptions.concurrent);
+      
       const metrics = new GitLabMetrics(config);
       const data = await metrics.getMergeRequestData(collectionOptions.startDate, collectionOptions.endDate);
 
