@@ -1,9 +1,26 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { homedir } from 'os';
 import inquirer from 'inquirer';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Get the user config directory (persistent across package upgrades)
+function getUserConfigDir() {
+  const home = homedir();
+  // Use .config directory (standard on macOS/Linux, works on Windows too)
+  return path.join(home, '.config', 'gitlab-metrics-collector');
+}
+
+function getUserConfigPath() {
+  return path.join(getUserConfigDir(), 'config.json');
+}
+
+// Legacy config path (in package directory - for migration)
+function getLegacyConfigPath() {
+  return path.join(__dirname, '..', 'config.json');
+}
 
 export const queries = {
    getMergeRequests: `
@@ -30,18 +47,67 @@ export const queries = {
 };
 
 export async function loadConfig() {
-  const configPath = path.join(__dirname, '..', 'config.json');
+  const userConfigPath = getUserConfigPath();
+  const legacyConfigPath = getLegacyConfigPath();
+  
+  // Try to load from user config directory first
   try {
-    const config = await fs.readFile(configPath, 'utf8');
+    const config = await fs.readFile(userConfigPath, 'utf8');
     return JSON.parse(config);
   } catch {
-    return null;
+    // If not found, try legacy location (for migration)
+    try {
+      const config = await fs.readFile(legacyConfigPath, 'utf8');
+      const parsed = JSON.parse(config);
+      
+      // Migrate to new location
+      await migrateConfig(parsed);
+      
+      return parsed;
+    } catch {
+      return null;
+    }
   }
 }
 
 export async function saveConfig(config) {
-  const configPath = path.join(__dirname, '..', 'config.json');
+  const configDir = getUserConfigDir();
+  const configPath = getUserConfigPath();
+  
+  // Ensure config directory exists
+  try {
+    await fs.mkdir(configDir, { recursive: true });
+  } catch (error) {
+    // Directory might already exist, ignore
+  }
+  
+  // Save to user config directory
   await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+  
+  // Remove legacy config if it exists (cleanup)
+  try {
+    const legacyPath = getLegacyConfigPath();
+    await fs.unlink(legacyPath);
+  } catch {
+    // Legacy config doesn't exist, ignore
+  }
+}
+
+// Migrate config from legacy location to user directory
+async function migrateConfig(config) {
+  const configDir = getUserConfigDir();
+  const configPath = getUserConfigPath();
+  
+  try {
+    // Ensure config directory exists
+    await fs.mkdir(configDir, { recursive: true });
+    
+    // Copy config to new location
+    await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+  } catch (error) {
+    // Migration failed, but that's okay - we'll still use the legacy config
+    console.warn('Warning: Could not migrate config to user directory:', error.message);
+  }
 }
 
 export async function promptConfig() {
