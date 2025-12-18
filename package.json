@@ -1,6 +1,6 @@
 {
   "name": "gitlab-metrics-collector",
-  "version": "1.0.10",
+  "version": "1.1.0",
   "description": "High-performance CLI tool for collecting merge request metrics from GitLab instances",
   "type": "module",
   "main": "src/index.js",
