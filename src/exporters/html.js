@@ -119,38 +119,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             color: #495057;
             margin-top: 5px;
         }
-        .performance-legend {
-            margin: 10px 0;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .performance-band {
-            display: inline-flex;
-            align-items: center;
-            margin-right: 15px;
-        }
-        .band-color {
-            width: 20px;
-            height: 10px;
-            margin-right: 5px;
-            border-radius: 2px;
-        }
-        .high-performer {
-            color: #40c057;
-            font-weight: bold;
-        }
-        .low-performer {
-            color: #fa5252;
-            font-weight: bold;
-        }
-        .metric-card.highlight {
-            border: 2px solid #40c057;
-        }
-        .metric-card.highlight-low {
-            border: 2px solid #fa5252;
-        }
     </style>
 </head>
 <body>
@@ -161,7 +129,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
                 <button class="button view-button active" data-view="individual">Individual View</button>
                 <button class="button view-button" data-view="team">Team Average</button>
                 <button class="button view-button" data-view="all">View All</button>
-                <button class="button view-button" data-view="performance">Performance Bands</button>
             </div>
             <div class="user-toggles">
                 <!-- User toggle buttons will be inserted here -->
@@ -169,16 +136,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             <div class="team-average-toggle" style="display: none;">
                 <input type="checkbox" id="teamAverageCheckbox">
                 <label for="teamAverageCheckbox">Show Team Average Overlay</label>
-            </div>
-            <div class="performance-legend" style="display: none;">
-                <div class="performance-band">
-                    <div class="band-color" style="background-color: rgba(64, 192, 87, 0.2)"></div>
-                    <span>Top Performers (75th percentile)</span>
-                </div>
-                <div class="performance-band">
-                    <div class="band-color" style="background-color: rgba(250, 82, 82, 0.2)"></div>
-                    <span>Low Performers (25th percentile)</span>
-                </div>
             </div>
         </div>
         <div class="metrics-grid">
@@ -255,10 +212,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             document.querySelector('.team-average-toggle').style.display = 
                 view === 'individual' ? 'flex' : 'none';
 
-            // Show/hide performance legend
-            document.querySelector('.performance-legend').style.display = 
-                view === 'performance' ? 'block' : 'none';
-
             updateMetrics();
             updateChart();
         }
@@ -309,42 +262,12 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             return metrics;
         }
 
-        function calculatePerformanceMetrics() {
-            // Calculate monthly performance for each user
-            const userPerformance = data.series.map(s => {
-                const total = s.data.reduce((sum, d) => sum + d.count, 0);
-                const average = total / s.data.length;
-                return { name: s.name, total, average };
-            });
-
-            // Sort by average to find quartiles
-            userPerformance.sort((a, b) => b.average - a.average);
-            
-            const q1Index = Math.floor(userPerformance.length * 0.25);
-            const q3Index = Math.floor(userPerformance.length * 0.75);
-            
-            const lowThreshold = userPerformance[q1Index]?.average || 0;
-            const highThreshold = userPerformance[q3Index]?.average || 0;
-
-            const topPerformers = userPerformance.slice(0, q1Index + 1);
-            const lowPerformers = userPerformance.slice(q3Index);
-
-            return {
-                lowThreshold,
-                highThreshold,
-                topPerformers,
-                lowPerformers,
-                allPerformance: userPerformance
-            };
-        }
-
         function updateMetrics() {
             const metrics = calculateMetrics();
-            const performance = calculatePerformanceMetrics();
             const grid = document.querySelector('.metrics-grid');
             
             // Create basic metrics cards
-            let html = \`
+            const html = \`
                 <div class="metric-card">
                     <div class="metric-value">\${metrics.total}</div>
                     <div class="metric-label">Total Merge Requests</div>
@@ -359,79 +282,23 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
                 </div>
             \`;
 
-            // Add performance metrics
-            if (currentView === 'performance' || currentView === 'all') {
-                html += \`
-                    <div class="metric-card highlight">
-                        <div class="metric-value">\${performance.topPerformers[0]?.name || 'N/A'}</div>
-                        <div class="metric-label">Top Performer</div>
-                        <div class="metric-value">\${performance.topPerformers[0]?.average.toFixed(1) || 0}</div>
-                        <div class="metric-label">Avg MRs/Month</div>
-                    </div>
-                    <div class="metric-card highlight-low">
-                        <div class="metric-value">\${performance.lowPerformers[0]?.name || 'N/A'}</div>
-                        <div class="metric-label">Needs Improvement</div>
-                        <div class="metric-value">\${performance.lowPerformers[0]?.average.toFixed(1) || 0}</div>
-                        <div class="metric-label">Avg MRs/Month</div>
-                    </div>
-                \`;
-            }
-
             grid.innerHTML = html;
         }
 
         function updateChart() {
             let traces = [];
-            const performance = calculatePerformanceMetrics();
             
-            if (currentView === 'performance') {
-                // Show all users with performance bands
-                traces = data.series.map((s, i) => ({
-                    name: s.name,
-                    x: s.data.map(d => d.month),
-                    y: s.data.map(d => d.count),
-                    type: 'scatter',
-                    mode: 'lines+markers',
-                    line: {
-                        color: performance.topPerformers.find(p => p.name === s.name) ? '#40c057' :
-                               performance.lowPerformers.find(p => p.name === s.name) ? '#fa5252' :
-                               colors[i % colors.length]
-                    },
-                    hovertemplate: '<b>%{y}</b> MRs in %{x}<extra></extra>'
-                }));
-
-                // Add performance bands
-                const months = data.series[0].data.map(d => d.month);
-                
-                // Add top performer band
-                traces.push({
-                    name: 'Top Performer Band',
-                    x: months,
-                    y: Array(months.length).fill(performance.highThreshold),
-                    type: 'scatter',
-                    mode: 'lines',
-                    line: { color: 'rgba(64, 192, 87, 0.2)', width: 0 },
-                    fill: 'tonexty',
-                    showlegend: false
-                });
-
-                // Add low performer band
-                traces.push({
-                    name: 'Low Performer Band',
-                    x: months,
-                    y: Array(months.length).fill(performance.lowThreshold),
-                    type: 'scatter',
-                    mode: 'lines',
-                    line: { color: 'rgba(250, 82, 82, 0.2)', width: 0 },
-                    fill: 'tonexty',
-                    showlegend: false
-                });
-            } else if (currentView === 'team') {
-                // Calculate and show team average
+            if (currentView === 'team') {
+                // Calculate and show team average (only counting active developers per month)
                 const monthlyAverages = {};
+                const monthlyActiveCounts = {}; // Track how many users had >0 MRs each month
+                
                 data.series.forEach(s => {
                     s.data.forEach(d => {
-                        monthlyAverages[d.month] = (monthlyAverages[d.month] || 0) + d.count;
+                        if (d.count > 0) {
+                            monthlyAverages[d.month] = (monthlyAverages[d.month] || 0) + d.count;
+                            monthlyActiveCounts[d.month] = (monthlyActiveCounts[d.month] || 0) + 1;
+                        }
                     });
                 });
 
@@ -439,11 +306,14 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
                 traces.push({
                     name: 'Team Average',
                     x: months,
-                    y: months.map(m => (monthlyAverages[m] / data.series.length).toFixed(1)),
+                    y: months.map(m => {
+                        const activeUsers = monthlyActiveCounts[m] || 1; // Avoid division by zero
+                        return parseFloat((monthlyAverages[m] / activeUsers).toFixed(1));
+                    }),
                     type: 'scatter',
                     mode: 'lines+markers',
                     line: { color: '#228be6', width: 3 },
-                    hovertemplate: '<b>%{y}</b> MRs per user in %{x}<extra></extra>'
+                    hovertemplate: '<b>%{y}</b> MRs per active user in %{x}<extra></extra>'
                 });
             } else {
                 // Show individual or all users
@@ -464,9 +334,14 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
                 // Add team average overlay if enabled in individual view
                 if (currentView === 'individual' && showTeamAverage) {
                     const monthlyAverages = {};
+                    const monthlyActiveCounts = {}; // Track how many users had >0 MRs each month
+                    
                     data.series.forEach(s => {
                         s.data.forEach(d => {
-                            monthlyAverages[d.month] = (monthlyAverages[d.month] || 0) + d.count;
+                            if (d.count > 0) {
+                                monthlyAverages[d.month] = (monthlyAverages[d.month] || 0) + d.count;
+                                monthlyActiveCounts[d.month] = (monthlyActiveCounts[d.month] || 0) + 1;
+                            }
                         });
                     });
 
@@ -474,7 +349,10 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
                     traces.push({
                         name: 'Team Average',
                         x: months,
-                        y: months.map(m => parseFloat((monthlyAverages[m] / data.series.length).toFixed(1))),
+                        y: months.map(m => {
+                            const activeUsers = monthlyActiveCounts[m] || 1; // Avoid division by zero
+                            return parseFloat((monthlyAverages[m] / activeUsers).toFixed(1));
+                        }),
                         type: 'scatter',
                         mode: 'lines+markers',
                         line: { 
@@ -486,15 +364,14 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
                             size: 8,
                             symbol: 'diamond'
                         },
-                        hovertemplate: '<b>%{y}</b> MRs per user (team avg) in %{x}<extra></extra>'
+                        hovertemplate: '<b>%{y}</b> MRs per active user (team avg) in %{x}<extra></extra>'
                     });
                 }
             }
 
             const layout = {
                 title: {
-                    text: currentView === 'performance' ? 'Performance Analysis' :
-                          currentView === 'team' ? 'Team Average MRs Over Time' : 
+                    text: currentView === 'team' ? 'Team Average MRs Over Time' : 
                           'Merge Requests Over Time',
                     font: { size: 24 }
                 },

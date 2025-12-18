@@ -135,11 +135,16 @@ gitlab-metrics collect
 
 #### HTML Format
 The HTML format provides an interactive visualization that includes:
-- Line charts showing merge request trends
-- Toggle controls for individual users
-- Performance analysis with top/low performer bands
+- **Individual View**: Compare specific team members with optional team average overlay
+- **Team Average View**: See overall team performance (averaged across active developers)
+- **View All**: Display all team members simultaneously
+- Line charts showing merge request trends over time
+- Toggle controls for selecting individual users
+- Team average overlay (purple dashed line) in individual view
 - Responsive design for all screen sizes
 - Detailed tooltips with monthly statistics
+
+**Note on Team Average**: The team average only includes developers with at least 1 MR in each month, providing a more accurate baseline by excluding vacation time, sick leave, or periods before/after employment.
 
 Example commands for different formats:
 ```bash
