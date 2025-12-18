@@ -1,14 +1,21 @@
 // src/index.js
 import { Command } from 'commander';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { promptConfig, saveConfig, loadConfig, promptCollectOptions, promptTeamSelection } from './utils.js';
 import { GitLabMetrics } from './metrics.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'));
 
 const program = new Command();
 
 program
   .name('gitlab-metrics')
   .description('CLI tool for collecting GitLab merge request metrics')
-  .version('1.0.4');
+  .version(packageJson.version);
 
 program
   .command('configure')
