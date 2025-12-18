@@ -69,6 +69,25 @@
             background-color: #228be6;
             color: white;
         }
+        .team-average-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #fff;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .team-average-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .team-average-toggle label {
+            cursor: pointer;
+            user-select: none;
+        }
         .chart-container {
             margin-top: 20px;
             padding: 15px;
@@ -145,6 +164,10 @@
             <div class="user-toggles">
                 <!-- User toggle buttons will be inserted here -->
             </div>
+            <div class="team-average-toggle" style="display: none;">
+                <input type="checkbox" id="teamAverageCheckbox">
+                <label for="teamAverageCheckbox">Show Team Average Overlay</label>
+            </div>
             <div class="performance-legend" style="display: none;">
                 <div class="performance-band">
                     <div class="band-color" style="background-color: rgba(64, 192, 87, 0.2)"></div>
@@ -166,6 +189,7 @@
         const data = {"months":["2023-01","2023-02","2023-03","2023-04","2023-05","2023-06","2023-07","2023-08","2023-09","2023-10","2023-11","2023-12"],"series":[{"name":"alice","data":[{"month":"2023-01","count":15},{"month":"2023-02","count":18},{"month":"2023-03","count":12},{"month":"2023-04","count":22},{"month":"2023-05","count":25},{"month":"2023-06","count":20},{"month":"2023-07","count":16},{"month":"2023-08","count":19},{"month":"2023-09","count":23},{"month":"2023-10","count":21},{"month":"2023-11","count":17},{"month":"2023-12","count":14}]},{"name":"bob","data":[{"month":"2023-01","count":8},{"month":"2023-02","count":10},{"month":"2023-03","count":7},{"month":"2023-04","count":12},{"month":"2023-05","count":15},{"month":"2023-06","count":11},{"month":"2023-07","count":9},{"month":"2023-08","count":13},{"month":"2023-09","count":14},{"month":"2023-10","count":12},{"month":"2023-11","count":10},{"month":"2023-12","count":8}]},{"name":"charlie","data":[{"month":"2023-01","count":25},{"month":"2023-02","count":28},{"month":"2023-03","count":22},{"month":"2023-04","count":32},{"month":"2023-05","count":35},{"month":"2023-06","count":30},{"month":"2023-07","count":26},{"month":"2023-08","count":29},{"month":"2023-09","count":33},{"month":"2023-10","count":31},{"month":"2023-11","count":27},{"month":"2023-12","count":24}]},{"name":"diana","data":[{"month":"2023-01","count":5},{"month":"2023-02","count":7},{"month":"2023-03","count":4},{"month":"2023-04","count":9},{"month":"2023-05","count":12},{"month":"2023-06","count":8},{"month":"2023-07","count":6},{"month":"2023-08","count":10},{"month":"2023-09","count":11},{"month":"2023-10","count":9},{"month":"2023-11","count":7},{"month":"2023-12","count":5}]},{"name":"evan","data":[{"month":"2023-01","count":18},{"month":"2023-02","count":20},{"month":"2023-03","count":16},{"month":"2023-04","count":25},{"month":"2023-05","count":28},{"month":"2023-06","count":23},{"month":"2023-07","count":19},{"month":"2023-08","count":22},{"month":"2023-09","count":26},{"month":"2023-10","count":24},{"month":"2023-11","count":20},{"month":"2023-12","count":17}]}]};
         let currentView = 'individual';
         let selectedUsers = new Set([data.series[0]?.name]); // Start with first user selected
+        let showTeamAverage = false; // Team average overlay toggle state
         
         // Colors for the traces
         const colors = ['#228be6', '#40c057', '#fab005', '#fd7e14', '#e64980', '#7950f2', '#15aabf'];
@@ -188,6 +212,13 @@
             document.querySelectorAll('.view-button').forEach(button => {
                 button.onclick = () => switchView(button.dataset.view);
             });
+
+            // Add team average toggle listener
+            const teamAverageCheckbox = document.getElementById('teamAverageCheckbox');
+            teamAverageCheckbox.onchange = (e) => {
+                showTeamAverage = e.target.checked;
+                updateChart();
+            };
         }
 
         function toggleUser(username) {
@@ -216,6 +247,10 @@
 
             // Show/hide user toggles based on view
             document.querySelector('.user-toggles').style.display = 
+                view === 'individual' ? 'flex' : 'none';
+
+            // Show/hide team average toggle (only in individual view)
+            document.querySelector('.team-average-toggle').style.display = 
                 view === 'individual' ? 'flex' : 'none';
 
             // Show/hide performance legend
@@ -423,6 +458,35 @@
                     line: { color: colors[i % colors.length] },
                     hovertemplate: '<b>%{y}</b> MRs in %{x}<extra></extra>'
                 }));
+
+                // Add team average overlay if enabled in individual view
+                if (currentView === 'individual' && showTeamAverage) {
+                    const monthlyAverages = {};
+                    data.series.forEach(s => {
+                        s.data.forEach(d => {
+                            monthlyAverages[d.month] = (monthlyAverages[d.month] || 0) + d.count;
+                        });
+                    });
+
+                    const months = Object.keys(monthlyAverages).sort();
+                    traces.push({
+                        name: 'Team Average',
+                        x: months,
+                        y: months.map(m => parseFloat((monthlyAverages[m] / data.series.length).toFixed(1))),
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { 
+                            color: '#7c3aed',
+                            width: 3,
+                            dash: 'dash'
+                        },
+                        marker: {
+                            size: 8,
+                            symbol: 'diamond'
+                        },
+                        hovertemplate: '<b>%{y}</b> MRs per user (team avg) in %{x}<extra></extra>'
+                    });
+                }
             }
 
             const layout = {
@@ -470,6 +534,10 @@
         initializeControls();
         updateMetrics();
         updateChart();
+        
+        // Set initial visibility states for toggles
+        document.querySelector('.team-average-toggle').style.display = 
+            currentView === 'individual' ? 'flex' : 'none';
     </script>
 </body>
 </html>

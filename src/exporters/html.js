@@ -71,6 +71,25 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             background-color: #228be6;
             color: white;
         }
+        .team-average-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #fff;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .team-average-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .team-average-toggle label {
+            cursor: pointer;
+            user-select: none;
+        }
         .chart-container {
             margin-top: 20px;
             padding: 15px;
@@ -147,6 +166,10 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             <div class="user-toggles">
                 <!-- User toggle buttons will be inserted here -->
             </div>
+            <div class="team-average-toggle" style="display: none;">
+                <input type="checkbox" id="teamAverageCheckbox">
+                <label for="teamAverageCheckbox">Show Team Average Overlay</label>
+            </div>
             <div class="performance-legend" style="display: none;">
                 <div class="performance-band">
                     <div class="band-color" style="background-color: rgba(64, 192, 87, 0.2)"></div>
@@ -168,6 +191,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         const data = <!-- DATA -->;
         let currentView = 'individual';
         let selectedUsers = new Set([data.series[0]?.name]); // Start with first user selected
+        let showTeamAverage = false; // Team average overlay toggle state
         
         // Colors for the traces
         const colors = ['#228be6', '#40c057', '#fab005', '#fd7e14', '#e64980', '#7950f2', '#15aabf'];
@@ -190,6 +214,13 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             document.querySelectorAll('.view-button').forEach(button => {
                 button.onclick = () => switchView(button.dataset.view);
             });
+
+            // Add team average toggle listener
+            const teamAverageCheckbox = document.getElementById('teamAverageCheckbox');
+            teamAverageCheckbox.onchange = (e) => {
+                showTeamAverage = e.target.checked;
+                updateChart();
+            };
         }
 
         function toggleUser(username) {
@@ -218,6 +249,10 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 
             // Show/hide user toggles based on view
             document.querySelector('.user-toggles').style.display = 
+                view === 'individual' ? 'flex' : 'none';
+
+            // Show/hide team average toggle (only in individual view)
+            document.querySelector('.team-average-toggle').style.display = 
                 view === 'individual' ? 'flex' : 'none';
 
             // Show/hide performance legend
@@ -425,6 +460,35 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
                     line: { color: colors[i % colors.length] },
                     hovertemplate: '<b>%{y}</b> MRs in %{x}<extra></extra>'
                 }));
+
+                // Add team average overlay if enabled in individual view
+                if (currentView === 'individual' && showTeamAverage) {
+                    const monthlyAverages = {};
+                    data.series.forEach(s => {
+                        s.data.forEach(d => {
+                            monthlyAverages[d.month] = (monthlyAverages[d.month] || 0) + d.count;
+                        });
+                    });
+
+                    const months = Object.keys(monthlyAverages).sort();
+                    traces.push({
+                        name: 'Team Average',
+                        x: months,
+                        y: months.map(m => parseFloat((monthlyAverages[m] / data.series.length).toFixed(1))),
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { 
+                            color: '#7c3aed',
+                            width: 3,
+                            dash: 'dash'
+                        },
+                        marker: {
+                            size: 8,
+                            symbol: 'diamond'
+                        },
+                        hovertemplate: '<b>%{y}</b> MRs per user (team avg) in %{x}<extra></extra>'
+                    });
+                }
             }
 
             const layout = {
@@ -472,6 +536,10 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         initializeControls();
         updateMetrics();
         updateChart();
+        
+        // Set initial visibility states for toggles
+        document.querySelector('.team-average-toggle').style.display = 
+            currentView === 'individual' ? 'flex' : 'none';
     </script>
 </body>
 </html>`;
